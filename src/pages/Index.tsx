@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
+const SEND_CONTACT_URL = "https://functions.poehali.dev/1fcaed2f-f046-4be3-907a-62b53a0d37a3";
+
 const APARTMENTS = [
   {
     id: 1,
@@ -88,6 +90,33 @@ export default function Index() {
   const [checkOut, setCheckOut] = useState("");
   const [filteredCards, setFilteredCards] = useState(APARTMENTS);
   const [searchDone, setSearchDone] = useState(false);
+
+  const [formName, setFormName] = useState("");
+  const [formContact, setFormContact] = useState("");
+  const [formMessage, setFormMessage] = useState("");
+  const [formStatus, setFormStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const handleFormSubmit = async () => {
+    if (!formName.trim() || !formContact.trim() || !formMessage.trim()) return;
+    setFormStatus("loading");
+    try {
+      const res = await fetch(SEND_CONTACT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: formName, contact: formContact, message: formMessage }),
+      });
+      if (res.ok) {
+        setFormStatus("success");
+        setFormName("");
+        setFormContact("");
+        setFormMessage("");
+      } else {
+        setFormStatus("error");
+      }
+    } catch {
+      setFormStatus("error");
+    }
+  };
 
   const amenityOptions = ["Wi-Fi", "Парковка", "Балкон", "Кухня", "Кондиционер"];
 
@@ -543,6 +572,8 @@ export default function Index() {
                     <input
                       type="text"
                       placeholder="Ваше имя"
+                      value={formName}
+                      onChange={(e) => setFormName(e.target.value)}
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#7B2FFF]/60 transition-colors"
                     />
                   </div>
@@ -551,6 +582,8 @@ export default function Index() {
                     <input
                       type="text"
                       placeholder="Email или телефон"
+                      value={formContact}
+                      onChange={(e) => setFormContact(e.target.value)}
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#7B2FFF]/60 transition-colors"
                     />
                   </div>
@@ -559,12 +592,41 @@ export default function Index() {
                     <textarea
                       rows={4}
                       placeholder="Чем можем помочь?"
+                      value={formMessage}
+                      onChange={(e) => setFormMessage(e.target.value)}
                       className="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#7B2FFF]/60 transition-colors resize-none"
                     />
                   </div>
-                  <button className="w-full btn-gradient text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2">
-                    <Icon name="Send" size={16} />
-                    Отправить
+
+                  {formStatus === "success" && (
+                    <div className="flex items-center gap-2 text-[#AAFF00] text-sm bg-[#AAFF00]/10 border border-[#AAFF00]/20 rounded-xl px-4 py-3">
+                      <Icon name="CheckCircle" size={16} />
+                      Сообщение отправлено! Ответим в ближайшее время.
+                    </div>
+                  )}
+                  {formStatus === "error" && (
+                    <div className="flex items-center gap-2 text-[#FF2D78] text-sm bg-[#FF2D78]/10 border border-[#FF2D78]/20 rounded-xl px-4 py-3">
+                      <Icon name="AlertCircle" size={16} />
+                      Ошибка отправки. Попробуйте позже.
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleFormSubmit}
+                    disabled={formStatus === "loading" || !formName || !formContact || !formMessage}
+                    className="w-full btn-gradient text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {formStatus === "loading" ? (
+                      <>
+                        <Icon name="Loader" size={16} className="animate-spin" />
+                        Отправляем...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="Send" size={16} />
+                        Отправить
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
